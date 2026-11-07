@@ -1,0 +1,14 @@
+node_modules/
+npm-debug.log*
+*.log
+
+# 本地配置文件：含具体授权过的会话 id，不进版本库
+.dsh/
+agent-forward.json
+
+# 编辑器
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

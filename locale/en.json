@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Agent forward",
+    "description": "Forward a message to another live session; same workspace by default, cross-workspace only when granted."
+  }
+}

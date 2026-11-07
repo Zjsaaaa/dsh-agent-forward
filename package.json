@@ -1,0 +1,50 @@
+{
+  "name": "dsh-agent-forward",
+  "version": "0.2.0",
+  "description": "DSH plugin: forward a message to another live session and get that turn's reply back. Same workspace is trusted by default; cross-workspace requires explicit per-session grants.",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "core.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test/core.test.js && node test/smoke.mjs",
+    "test:unit": "node test/core.test.js"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "agent",
+    "session",
+    "relay",
+    "multi-agent"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zjsaaaa/dsh-agent-forward.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Zjsaaaa/dsh-agent-forward/issues"
+  },
+  "homepage": "https://github.com/Zjsaaaa/dsh-agent-forward#readme"
+}

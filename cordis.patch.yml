@@ -1,0 +1,5 @@
+# dsh-agent-forward 的挂载声明：把插件插入 DSH 配置树。
+# id 是配置行标识（patch 覆盖时按它定位），name 是模块名（解析到本包的 index.js）。
+- insert:
+    - id: agent-forward
+      name: 'dsh-agent-forward'

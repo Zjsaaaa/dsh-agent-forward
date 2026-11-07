@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Agent forward">
+  <rect width="64" height="64" rx="14" fill="#1659d6"/>
+  <path fill="#ffffff" fill-opacity="0.95" d="M14 13h20a5 5 0 0 1 5 5v9a5 5 0 0 1-5 5H24l-7 6v-6h-3a5 5 0 0 1-5-5v-9a5 5 0 0 1 5-5Z"/>
+  <path fill="#ffffff" fill-opacity="0.72" d="M50 30H32a5 5 0 0 0-5 5v8a5 5 0 0 0 5 5h9l7 6v-6h2a5 5 0 0 0 5-5v-8a5 5 0 0 0-5-5Z"/>
+  <path fill="#1659d6" d="M35.5 22.5h6.2l-2.4-2.4 1.7-1.7 5.3 5.3-5.3 5.3-1.7-1.7 2.4-2.4h-6.2v-2.4Z"/>
+</svg>
