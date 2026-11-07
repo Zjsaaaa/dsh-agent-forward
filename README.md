@@ -35,25 +35,39 @@ DSH 里每个标签页是一个独立会话。想「让隔壁那个正在跑任�
 
 ## 安装
 
-### 方式一：插件管理器
+本插件是纯 JavaScript，**没有构建步骤**，所以下面三种方式都不会触发 `prepare` 脚本授权。
 
-DSH → 插件管理器 → 添加插件 → 填入本目录的绝对路径（或仓库地址）。
+### 方式一：从 GitHub 直接装（推荐）
 
-### 方式二：`plugin_manager` 工具
-
-```
-install_bundle  target: <本目录绝对路径 或 包名>
+```bash
+dsh plugin --profile <profile> add github:Zjsaaaa/dsh-agent-forward
 ```
 
-### 从源码安装
+> 锁定提交更稳妥：`github:Zjsaaaa/dsh-agent-forward#<sha>`。
+
+### 方式二：从本地 checkout 装
 
 ```bash
 git clone https://github.com/Zjsaaaa/dsh-agent-forward.git
+dsh plugin --profile <profile> add ./dsh-agent-forward
 ```
 
-然后在插件管理器里把上面克隆出来的目录加进去。本插件无运行时依赖，不需要 `npm install`。
+### 方式三：插件管理器
 
-**卸载**：插件管理器里移除 `dsh-agent-forward`，两个工具和命令一起消失。
+DSH → 插件管理器 → 添加插件 → 填入本目录的绝对路径。
+
+安装后可先验证层已生效，再启动：
+
+```bash
+dsh --profile <profile> --dump-config   # 应看到 "# == dsh-agent-forward" 层
+dsh --profile <profile>
+```
+
+**卸载**：`dsh plugin --profile <profile> remove dsh-agent-forward`，两个工具和命令一起消失。
+
+### 版本要求
+
+`package.json` 声明 `engines.dsh: ">=0.2.0"`。当前运行的 DSH 不满足该范围时，安装与 profile 启动都会拒绝加载。
 
 ## 配置
 
