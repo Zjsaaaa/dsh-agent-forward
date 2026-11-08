@@ -2,6 +2,10 @@ node_modules/
 npm-debug.log*
 *.log
 
+# 测试临时目录：smoke.mjs 用 `.tmp-smoke-<pid>` 建临场会话库，
+# 正常退出会自清；中途失败或 Ctrl+C 时会留下，别让它进版本库。
+test/.tmp-smoke-*/
+
 # 本地配置文件：含具体授权过的会话 id，不进版本库
 .dsh/
 agent-forward.json

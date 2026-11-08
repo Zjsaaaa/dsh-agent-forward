@@ -7,13 +7,17 @@ import {
   captureTurn,
   collectTurnText,
   lastSeq,
+  makeReplyToken,
   normalizeConfig,
   normalizeWorkspacePath,
   parseConfigText,
+  parseHop,
+  parseReplyToken,
   readConfig,
   sameWorkspace,
   sessionCwd,
   sessionTitle,
+  shortSessionId,
   textOfMessage,
 } from '../core.js'
 
@@ -55,9 +59,13 @@ test('normalizeConfig: 缺省值是「同工作区放行、跨工作区全拒」
   const config = normalizeConfig(undefined)
   assert.equal(config.workspaceInterop, true)
   assert.deepEqual(config.allowCross, [])
+  assert.equal(config.resumeClosed, true)
   assert.equal(config.maxWaitMs, DEFAULT_CONFIG.maxWaitMs)
+  assert.equal(config.maxResumeMs, DEFAULT_CONFIG.maxResumeMs)
   assert.equal(config.maxChars, DEFAULT_CONFIG.maxChars)
   assert.equal(config.maxPerMinute, DEFAULT_CONFIG.maxPerMinute)
+  assert.equal(config.maxPerMinuteClosed, DEFAULT_CONFIG.maxPerMinuteClosed)
+  assert.equal(config.hopLimit, DEFAULT_CONFIG.hopLimit)
 })
 
 test('normalizeConfig: allowCross 去重、丢弃非法项、workspaceInterop=false 生效', () => {
@@ -188,6 +196,22 @@ test('SlidingWindow: 达到上限后拒绝，窗口滑过后放行', () => {
   assert.equal(limiter.take('a>c'), true)
   now += 60001
   assert.equal(limiter.take('a>b'), true)
+})
+
+test('shortSessionId / makeReplyToken / parseReplyToken', () => {
+  const id = 'session-03d2e535-6a82-457c-8bc6-89fff4c0be05'
+  assert.equal(shortSessionId(id), '03d2e535')
+  const token = makeReplyToken(id, 'a1b2c3d4')
+  assert.equal(token, 'm-03d2e535-a1b2c3d4')
+  assert.deepEqual(parseReplyToken(token), { short: '03d2e535', nonce: 'a1b2c3d4' })
+  assert.equal(parseReplyToken('nope'), null)
+})
+
+test('parseHop: 读 [hop:N]，没有或非法为 0', () => {
+  assert.equal(parseHop('正文 [hop:2] 继续'), 2)
+  assert.equal(parseHop('没有标注'), 0)
+  assert.equal(parseHop('[hop:0]'), 0)
+  assert.equal(parseHop(undefined), 0)
 })
 
 test('captureTurn: 先挂监听再 followup，命中认领的 turn 后按窗口取回复', async () => {

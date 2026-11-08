@@ -1,8 +1,9 @@
 {
   "name": "dsh-agent-forward",
-  "version": "0.2.0",
-  "description": "DSH plugin: forward a message to another live session and get that turn's reply back. Same workspace is trusted by default; cross-workspace requires explicit per-session grants.",
+  "version": "0.4.0",
+  "description": "Agent-to-agent messaging across DSH sessions: live or resume-on-demand, workspace-scoped, with reply tokens.",
   "type": "module",
+  "main": "./index.js",
   "exports": {
     ".": "./index.js",
     "./locale/*.json": "./locale/*.json",
@@ -11,15 +12,21 @@
   "files": [
     "index.js",
     "core.js",
+    "closed.js",
     "cordis.patch.yml",
     "locale/*.json",
     "icon.svg",
     "README.md",
     "LICENSE"
   ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
   "scripts": {
-    "test": "node test/core.test.js && node test/smoke.mjs",
-    "test:unit": "node test/core.test.js"
+    "test": "node test/core.test.js && node test/closed.test.js && node test/smoke.mjs",
+    "test:unit": "node test/core.test.js && node test/closed.test.js"
   },
   "keywords": [
     "dsh",
@@ -28,17 +35,12 @@
     "agent",
     "session",
     "relay",
-    "multi-agent"
+    "multi-agent",
+    "reply-token"
   ],
-  "main": "./index.js",
   "engines": {
     "node": ">=20",
     "dsh": ">=0.2.0"
-  },
-  "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    }
   },
   "license": "MIT",
   "repository": {

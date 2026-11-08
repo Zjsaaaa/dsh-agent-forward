@@ -11,9 +11,13 @@ import path from 'node:path'
 export const DEFAULT_CONFIG = Object.freeze({
   workspaceInterop: true,
   allowCross: [],
+  resumeClosed: true,
   maxWaitMs: 120000,
+  maxResumeMs: 60000,
   maxChars: 2000,
   maxPerMinute: 5,
+  maxPerMinuteClosed: 2,
+  hopLimit: 3,
 })
 
 const positive = (value, fallback, min) =>
@@ -43,9 +47,13 @@ export function normalizeConfig(raw) {
   return {
     workspaceInterop: source.workspaceInterop !== false,
     allowCross: grants,
+    resumeClosed: source.resumeClosed !== false,
     maxWaitMs: positive(source.maxWaitMs, DEFAULT_CONFIG.maxWaitMs, 1000),
+    maxResumeMs: positive(source.maxResumeMs, DEFAULT_CONFIG.maxResumeMs, 1000),
     maxChars: positive(source.maxChars, DEFAULT_CONFIG.maxChars, 1),
     maxPerMinute: positive(source.maxPerMinute, DEFAULT_CONFIG.maxPerMinute, 1),
+    maxPerMinuteClosed: positive(source.maxPerMinuteClosed, DEFAULT_CONFIG.maxPerMinuteClosed, 1),
+    hopLimit: positive(source.hopLimit, DEFAULT_CONFIG.hopLimit, 1),
   }
 }
 
@@ -168,6 +176,34 @@ export function sessionTitle(session) {
 export function sessionCwd(session) {
   const cwd = session && session.header && session.header.cwd
   return typeof cwd === 'string' && cwd.trim() !== '' ? cwd : null
+}
+
+/** 会话 id 的短码：session-<uuid> → uuid 去掉连字符后的前 8 位。 */
+export function shortSessionId(sessionId) {
+  const text = typeof sessionId === 'string' ? sessionId : ''
+  const uuid = text.startsWith('session-') ? text.slice('session-'.length) : text
+  const short = uuid.replace(/-/g, '').slice(0, 8)
+  return short || 'unknown'
+}
+
+/** 自描述回复令牌：m-<发起方短码>-<nonce>，不依赖内存路由表。 */
+export function makeReplyToken(sessionId, nonce) {
+  return `m-${shortSessionId(sessionId)}-${nonce}`
+}
+
+/** 解析回复令牌；非法返回 null。 */
+export function parseReplyToken(token) {
+  const match = /^m-([0-9a-z]{4,16})-([0-9a-z]{4,16})$/i.exec(String(token || '').trim())
+  if (!match) return null
+  return { short: match[1].toLowerCase(), nonce: match[2].toLowerCase() }
+}
+
+/** 从正文里读转发深度标注 [hop:N]；没有则为 0。 */
+export function parseHop(text) {
+  const match = /\[hop:(\d+)\]/i.exec(String(text || ''))
+  if (!match) return 0
+  const value = Number(match[1])
+  return Number.isFinite(value) && value > 0 ? value : 0
 }
 
 /**
