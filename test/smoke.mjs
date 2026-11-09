@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict'
+﻿import assert from 'node:assert/strict'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { zstdCompressSync } from 'node:zlib'
@@ -182,6 +182,7 @@ const waited = await callSend({ session_id: 'session-b', text: '现在几点', r
 assert.equal(waited.status, 'replied')
 assert.match(waited.text, /session-b 的回答/)
 
+
 // 5. hop 超限：只投递不唤醒
 const hop3 = await callSend({ session_id: 'session-b', text: '继续 [hop:3]', reason: '测试' })
 assert.equal(hop3.delivered, true)
@@ -199,6 +200,20 @@ assert.equal((await runCommand('allow session-c')).kind, 'success')
 list = await tools.get('agent_list').execute({}, { agent: agentA })
 assert.equal(list.agents.find((agent) => agent.id === 'session-c').scope, 'external')
 const cross = await callSend({ session_id: 'session-c', text: '帮我核对', reason: '核对结论' })
+
+// 7b. 回归：wait:true 期间对方用 agent_reply 投递了正文 → 工具返回值不再重复搬运正文
+//     （否则发送方会同时从「工具返回值」和「消息」看到同一段文字）
+const earlyC = await callSend({ session_id: 'session-c', text: '先问一句', reason: '测试' })
+const realFollowupC = agentC.followup
+agentC.followup = (message) => setTimeout(() => realFollowupC.call(agentC, message), 20)
+const pendingC = callSend({ session_id: 'session-c', text: '再问一句', reason: '测试', wait: true })
+await new Promise((resolve) => setTimeout(resolve, 5))
+await tools.get('agent_reply').execute({ reply_token: earlyC.replyToken, text: '这段正文只应出现一次' }, { agent: agentC })
+const deduped = await pendingC
+agentC.followup = realFollowupC
+assert.equal(deduped.status, 'replied')
+assert.match(deduped.text, /正文已作为消息送达/)
+assert.doesNotMatch(deduped.text, /session-c 的回答/)
 assert.equal(cross.status, 'delivered')
 assert.equal(cross.scope, 'external')
 

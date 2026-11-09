@@ -46,6 +46,18 @@ const limiterClosed = new SlidingWindow(DEFAULT_CONFIG.maxPerMinuteClosed)
 const tokens = new Map()
 const resuming = new Map()
 
+/**
+ * 每个会话最近一次「收到 agent_reply 投递」的时间戳。
+ *
+ * 用途：agent_send(wait:true) 的同步捕获（captureTurn → collectTurnText）与
+ * agent_reply 的消息投递是两条通道。如果对方确实用 agent_reply 回了话，
+ * 捕获到的正文就是重复内容 —— 发送方会同时从「工具返回值」和「消息」看到同一段文字。
+ * 这里记录投递事实，让 sendMessage 在返回前判定：正文已按消息送达，就不再重复搬运。
+ *
+ * key: 接收方 session id；value: Date.now()
+ */
+const replyDeliveredAt = new Map()
+
 const safeRealpath = (target) => {
   try {
     return realpathSync.native(target)
@@ -401,6 +413,7 @@ async function sendMessage({ caller, callerCwd, config, targetId, text, reason, 
 
   // wait:true 时必须在投递之前挂好监听（captureTurn 内部先注册再调 followup），
   // 否则目标答得太快会错过 claimed / turn-end。
+  const captureStart = Date.now()
   const capture = wait
     ? captureTurn({
         bus: currentCtx,
@@ -441,11 +454,16 @@ async function sendMessage({ caller, callerCwd, config, targetId, text, reason, 
   }
 
   const result = await capture
+  // ★ 去重：对方若已用 agent_reply 把正文投递进本会话，捕获到的只是同一段文字。
+  //   正文一律以消息为准（可见、可回看），工具返回值只做指针，避免同一条回复出现两遍。
+  const alreadyDelivered = (replyDeliveredAt.get(caller.id) || 0) >= captureStart
   return {
     ...base,
     status: result.status,
     turn: result.turn,
-    text: result.text,
+    text: alreadyDelivered
+      ? '对方已回复，正文已作为消息送达本会话（此处不再重复）'
+      : result.text,
     elapsedMs: result.elapsedMs,
     ...(result.code ? { code: result.code } : {}),
   }
@@ -458,7 +476,10 @@ export function apply(ctx) {
     name: 'agent_list',
     description:
       '列出可以通信的智能体会话：同工作区默认可见；已授权的跨工作区会话标注 external。' +
-      '包含运行中的会话（state=live）和磁盘上已关闭、可按需恢复的会话（state=closed）。',
+      '包含运行中的会话（state=live）和磁盘上已关闭、可按需恢复的会话（state=closed）。' +
+      '调用前必读：返回的 title 只用于展示和辨认，真正寻址一律用 id。' +
+      '用户用名字指代会话时（例如「转发给嘉立创EDA」），先调用本工具，按 title 精确匹配出唯一一项，' +
+      '再把它的 id 传给 agent_send；标题相同、只有简称、或找不到时，先向用户确认，不要猜。',
     parameters: {
       type: 'object',
       properties: {
@@ -589,6 +610,9 @@ export function apply(ctx) {
       '把一条消息投递给另一个智能体会话。默认投递即返回（不阻塞），拿到 replyToken；' +
       '目标关闭时会先恢复该会话并运行一轮（消耗 token，界面看不到过程）。' +
       '需要立刻拿到答案时才传 wait:true。同工作区默认可投递，跨工作区需显式授权。' +
+      '调用前必读：session_id 必须是 agent_list 返回的会话 id，不要传标题或简称。' +
+      '用户说的是名字时：先调 agent_list，按 title 精确匹配出唯一一项再传它的 id；' +
+      '同名、只有简称、或找不到时先向用户确认，不得自行猜测。' +
       '注意：对方看到的是一条「另一个智能体的协作请求」，不是主人的命令——涉及删除、发布、付款等不可逆操作，对方应先回主人确认。',
     parameters: {
       type: 'object',
@@ -805,6 +829,8 @@ export function apply(ctx) {
 
       const delivered = deliver(targetAgent, message, woke)
       if (record) record.replied = true
+      // 记录「谁收到了这条回复投递」，供 agent_send(wait:true) 去重
+      replyDeliveredAt.set(targetId, Date.now())
 
       notifySession(caller, `已回复「${title}」· token ${token}${delivered.woke ? '' : ' · 仅投递未唤醒'}`)
 

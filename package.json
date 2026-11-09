@@ -1,6 +1,6 @@
 {
   "name": "dsh-agent-forward",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Agent-to-agent messaging across DSH sessions: live or resume-on-demand, workspace-scoped, with reply tokens.",
   "type": "module",
   "main": "./index.js",
